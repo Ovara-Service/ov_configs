@@ -16,6 +16,8 @@ The Config Editor System is a comprehensive tool for managing server configurati
 - **Integration with FiveM**: Optimized for server-side and client-side synchronization, ensuring consistency across all users.
 - **Database Support**: Stores configurations securely using MySQL.
 
+![Screenshot of Config Editor](https://www.floba-media.de/wp-content/uploads/2025/01/ConfigEditor.png)
+
 ## Getting Started
 
 ### Installation
