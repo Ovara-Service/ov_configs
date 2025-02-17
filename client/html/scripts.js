@@ -70,6 +70,8 @@ function renderConfig() {
             const falseOption = new Option('false', 'false', setting.value === false);
             input.add(trueOption);
             input.add(falseOption);
+
+            input.value = setting.value ? 'true' : 'false';
         } else {
             input = document.createElement('input');
             input.type = 'text';
