@@ -29,14 +29,15 @@ function waitConfigLoaded()
     end
 end
 
+CONFIG_NAME = "bansystem"
+
 while GetResourceState("ov_configs") ~= "started" do
     Citizen.Wait(1000 * 3);
     if GetResourceState("ov_configs") ~= "started" then
-        print("You need to start ov_configs so that bansystem can start!")
+        print("You need to start ov_configs so that " .. CONFIG_NAME .. " can start! Get it here: https://github.com/Ovara-Service/ov_configs")
     end
 end
 
-CONFIG_NAME = "bansystem"
 if not IsDuplicityVersion() then -- Only register this event for the client
     OV_CONFIG_DATA = exports["ov_configs"]:getConfig(CONFIG_NAME)
 
