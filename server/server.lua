@@ -44,7 +44,7 @@ function loadConfig(name, defaultConfig, validationFunction)
 
     local config = createConfig(name)
 
-    config.setDefaultConfig(validationFunction)
+    config.setDefaultConfig(defaultConfig)
     config.setValidation(validationFunction)
 
     if not row then
@@ -173,6 +173,27 @@ Events.RegisterServerCallback("getConfig", function(src, cb, name)
     cb(nil)
 end)
 
+Events.RegisterServerCallback("getConfigs", function(src, cb)
+    local returnedConfigs = {}
+    for k, v in pairs(configs) do
+        if canEditConfig(src, k) then
+            table.insert(returnedConfigs, {
+                name = k,
+                version = v.getVersion()
+            })
+        end
+    end
+    cb(returnedConfigs)
+end)
+
+Events.RegisterServerCallback("canConfigTp", function(src, cb)
+    if canConfigTeleport(src) then
+        cb(true)
+    else
+        cb(false)
+    end
+end)
+
 function sendReloadConfig(config)
     if config == nil then
         print("Error: Tried to send reload of nil config!")
@@ -188,3 +209,32 @@ function sendReloadConfig(config)
         TriggerClientEvent("ov_configs:reloadConfig", -1, configName)
     end)
 end
+
+RegisterNetEvent('ov_configs:getPlayerPosition')
+AddEventHandler('ov_configs:getPlayerPosition', function()
+    local _source = source
+    local ped = GetPlayerPed(_source)
+    local coords = GetEntityCoords(ped)
+    local heading = GetEntityHeading(ped)
+
+    TriggerClientEvent('returnPlayerPosition', _source, {
+        x = coords.x,
+        y = coords.y,
+        z = coords.z,
+        heading = heading
+    })
+end)
+
+RegisterNetEvent('ov_configs:teleportToPosition')
+AddEventHandler('ov_configs:teleportToPosition', function(position)
+    local _source = source
+    if not canConfigTeleport(_source) then
+        print("Player (" .. tostring(_source) .. ") tried to config teleport, but has no permission.")
+        return
+    end
+    local ped = GetPlayerPed(_source)
+    SetEntityCoords(ped, tonumber(position.x), tonumber(position.y), tonumber(position.z), false, false, false, true)
+    if position.heading then
+        SetEntityHeading(ped, tonumber(position.heading))
+    end
+end)

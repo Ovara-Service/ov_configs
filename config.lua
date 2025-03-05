@@ -1,4 +1,4 @@
-isDebug = false
+isDebug = true
 
 canEditConfig = function(source, configName)
     if IsPlayerAceAllowed(source, "config.admin") then
@@ -6,6 +6,14 @@ canEditConfig = function(source, configName)
     end
 
     return IsPlayerAceAllowed(source, "config." .. configName)
+end
+
+canConfigTeleport = function(source)
+    if IsPlayerAceAllowed(source, "config.admin") then
+        return true
+    end
+
+    return IsPlayerAceAllowed(source, "config.teleport")
 end
 
 -- Custom Notify -- type is 'success' or 'error'
