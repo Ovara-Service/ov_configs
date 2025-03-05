@@ -1,7 +1,7 @@
 fx_version 'adamant'
 game 'gta5'
 
-version '1.0.0'
+version '1.0.1'
 author 'Ovara.gg (Floex)'
 description 'Configuration system'
 
