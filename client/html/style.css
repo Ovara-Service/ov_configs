@@ -36,6 +36,12 @@ h1 {
     font-size: 24px;
 }
 
+h2 {
+    color: #4caf50;
+    font-size: 20px;
+    margin-bottom: 15px;
+}
+
 .config-item {
     margin-bottom: 20px;
 }
@@ -52,7 +58,7 @@ h1 {
     font-style: italic;
 }
 
-.config-item input, .config-item textarea, .config-item select {
+.config-item input, .config-item select {
     width: 100%;
     padding: 12px;
     margin-top: 5px;
@@ -63,7 +69,7 @@ h1 {
     color: #f0f0f0;
 }
 
-.config-item input:focus, .config-item textarea:focus, .config-item select:focus {
+.config-item input:focus, .config-item select:focus {
     border-color: #4caf50;
     outline: none;
     box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
@@ -119,7 +125,160 @@ button:hover {
     transform: scale(1.1);
 }
 
-/* Optimierte Scrollbars */
+.sub-config {
+    margin-left: 20px;
+    padding: 10px;
+    border-left: 2px solid #4caf50;
+}
+
+.sub-item {
+    margin-bottom: 15px;
+}
+
+.sub-item label {
+    font-size: 14px;
+    color: #d0d0d0;
+}
+
+.array-container {
+    margin-left: 20px;
+    padding: 10px;
+    border-left: 2px solid #4caf50;
+}
+
+.array-item {
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.add-button {
+    display: inline-block;
+    width: auto;
+    max-width: none;
+    padding: 8px 16px;
+    background-color: #2196f3;
+    margin: 5px 0;
+}
+
+.add-button:hover {
+    background-color: #1976d2;
+}
+
+.remove-button {
+    display: inline-block;
+    width: auto;
+    max-width: none;
+    padding: 8px 16px;
+    background-color: #ff5252;
+    margin-left: 10px;
+}
+
+.remove-button:hover {
+    background-color: #ff1744;
+}
+
+.submit-button {
+    display: inline-block;
+    width: auto;
+    max-width: none;
+    padding: 8px 16px;
+    background-color: #4caf50;
+    margin: 5px 0;
+}
+
+.submit-button:hover {
+    background-color: #45a049;
+}
+
+.position-button {
+    display: inline-block;
+    width: auto;
+    max-width: none;
+    padding: 8px 16px;
+    background-color: #ff9800;
+    margin: 5px 10px 5px 0;
+}
+
+.position-button:hover {
+    background-color: #f57c00;
+}
+
+.teleport-button {
+    display: inline-block;
+    width: auto;
+    max-width: none;
+    padding: 8px 16px;
+    background-color: #9c27b0;
+    margin: 5px 10px 5px 10px;
+}
+
+.teleport-button:hover {
+    background-color: #7b1fa2;
+}
+
+.tag-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 5px;
+    padding: 5px;
+    background: #2a2a2a;
+    border: 1px solid #555;
+    border-radius: 8px;
+}
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    background: #4caf50;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.remove-tag {
+    margin-left: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.remove-tag:hover {
+    color: #ff5252;
+}
+
+.tag-container input {
+    flex: 1;
+    min-width: 150px;
+    margin: 0;
+    border: none;
+    background: transparent;
+    color: #f0f0f0;
+}
+
+.tag-container input:focus {
+    outline: none;
+    border: none;
+    box-shadow: none;
+}
+
+.add-form {
+    background: #2a2a2a;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.form-field {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.form-field input {
+    flex: 1;
+}
+
 #config-editor::-webkit-scrollbar {
     width: 10px;
 }
@@ -142,4 +301,37 @@ button:hover {
 .invalid {
     border: 2px solid red !important;
     outline: none;
+}
+
+/* Styling für die Config-Liste */
+#config-list-container {
+    margin-bottom: 20px;
+}
+
+#config-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#config-list li {
+    background: #2a2a2a;
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#config-list li:hover {
+    background: #3a3a3a;
+}
+
+#config-list li span {
+    color: #f0f0f0;
+    font-size: 14px;
+}
+
+.hidden {
+    display: none;
 }
