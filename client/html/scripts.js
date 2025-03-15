@@ -184,11 +184,9 @@ function renderConfigList(configs) {
     configList.innerHTML = '';
 
     configs.forEach(config => {
-        console.log("Adding config:", config);
         const li = document.createElement('li');
         li.innerHTML = `<span>${config.name} (v${config.version})</span>`;
         li.addEventListener('click', () => {
-            console.log("Click???", config);
             fetch(`https://${GetParentResourceName()}/openConfig`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -356,7 +354,7 @@ function renderValue(value, parentElement, setting, index, path = []) {
 
         input.dataset.index = index;
         input.dataset.path = JSON.stringify(path);
-        input.addEventListener('input', () => validateInput(input, setting));
+        input.addEventListener('input', () => validateInput(input, setting, index));
         parentElement.appendChild(input);
     }
 }
@@ -535,21 +533,42 @@ function removeArrayItem(index, path, itemIndex) {
 }
 
 // Validate input changes
-function validateInput(input, setting) {
+function validateInput(input, setting, index) {
     const path = JSON.parse(input.dataset.path || '[]');
     let current = setting.value;
 
+    // Navigate to the correct level in the object
     for (const key of path.slice(0, -1)) {
         current = current[key];
     }
     const lastKey = path[path.length - 1];
 
+    // Determine the new value based on input type
+    let newValue;
     if (input.tagName === 'SELECT') {
-        current[lastKey] = input.value === 'true';
+        newValue = input.value === 'true'; // Convert "true"/"false" string to boolean
     } else {
-        current[lastKey] = input.value;
+        // For text inputs, try to infer the correct type based on the original value
+        const originalValue = lastKey ? current[lastKey] : setting.value;
+        if (typeof originalValue === 'boolean') {
+            newValue = input.value.toLowerCase() === 'true';
+        } else if (typeof originalValue === 'number') {
+            newValue = isNaN(parseFloat(input.value)) ? input.value : parseFloat(input.value);
+        } else {
+            newValue = input.value; // Keep as string for text
+        }
     }
 
+    // Apply the new value
+    if (path.length === 0) {
+        // Direct value (no nesting)
+        sortedConfig[index].value = newValue;
+    } else {
+        // Nested value
+        current[lastKey] = newValue;
+    }
+
+    console.log("Validated input:", { index, path, newValue, updatedConfig: sortedConfig[index].value });
     input.classList.remove('invalid');
 }
 
@@ -566,7 +585,7 @@ document.getElementById('save-button').addEventListener('click', () => {
         }
         const setting = sortedConfig[index];
         if (setting) {
-            validateInput(input, setting);
+            validateInput(input, setting, index); // Validate and update the config
         } else {
             console.log("Could not validate input for index:", index, input);
             hasErrors = true; // Mark as error if setting is undefined
@@ -575,7 +594,7 @@ document.getElementById('save-button').addEventListener('click', () => {
 
     if (hasErrors) return;
 
-    console.log("Saving config:", { configName, sortedConfig });
+    console.log("Saving config:", JSON.stringify({ configName, sortedConfig }, null, 2));
 
     fetch(`https://${GetParentResourceName()}/saveConfig`, {
         method: 'POST',

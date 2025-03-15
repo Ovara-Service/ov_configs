@@ -71,7 +71,7 @@ RegisterNUICallback("saveConfig", function(data, cb)
         return cb("error")
     end
 
-    debug("Updated Config (" .. tostring(configName) .. "): " .. dump(configData))
+    debug("Saving Config (" .. tostring(configName) .. "): " .. dump(configData))
 
     Events.TriggerServerCallback("saveUiConfig", function(success)
         if success then
