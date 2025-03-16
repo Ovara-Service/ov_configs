@@ -94,16 +94,35 @@ function createConfig(name, version)
             return value -- Return as-is if already a number
         elseif defaultType == "boolean" then
             return value == "true" or value == true
-        elseif defaultType == "table" then
+        elseif defaultType == "table" or defaultType == "vector3" or defaultType == "vector4" then
             if type(value) ~= "table" then
-                print("Could not convert invalid value for '" .. dump(value) .. "' with default: " .. dump(defaultValue))
+                print("Could not convert invalid value for '" .. tostring(value) .. "' with default: " .. tostring(defaultValue))
                 return value -- Cannot convert non-table to table
             end
-            local convertedTable = {}
-            for k, v in pairs(value) do
-                convertedTable[k] = convertValue(v, defaultValue[k])
+
+            -- Check if defaultValue is a vector3 or vector4
+            local isVector3 = defaultType == "vector3"
+            local isVector4 = defaultType == "vector4"
+
+            if isVector3 or isVector4 then
+                local convertedVector = {}
+                -- Convert only the expected keys for vector3/vector4
+                convertedVector.x = convertValue(value.x, defaultValue.x) or defaultValue.x
+                convertedVector.y = convertValue(value.y, defaultValue.y) or defaultValue.y
+                convertedVector.z = convertValue(value.z, defaultValue.z) or defaultValue.z
+                if isVector4 then
+                    convertedVector.w = convertValue(value.w, defaultValue.w) or defaultValue.w
+                    return vector4(convertedVector.x, convertedVector.y, convertedVector.z, convertedVector.w)
+                end
+                return vector3(convertedVector.x, convertedVector.y, convertedVector.z)
+            else
+                -- Regular table conversion
+                local convertedTable = {}
+                for k, v in pairs(value) do
+                    convertedTable[k] = convertValue(v, defaultValue[k])
+                end
+                return convertedTable
             end
-            return convertedTable
         end
         return value -- Return as-is for strings or other types
     end
