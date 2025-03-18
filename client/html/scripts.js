@@ -226,8 +226,9 @@ function renderConfig() {
 // Render values recursively
 function renderValue(value, parentElement, setting, index, path = []) {
     if (Array.isArray(value)) {
-        const isStringArray = value.every(item => typeof item === 'string');
-        if (isStringArray) {
+        // Check if all elements are strings or integers
+        const isSimpleArray = value.every(item => typeof item === 'string' || Number.isInteger(item));
+        if (isSimpleArray) {
             const tagContainer = document.createElement('div');
             tagContainer.className = 'tag-container';
 
@@ -250,7 +251,14 @@ function renderValue(value, parentElement, setting, index, path = []) {
             input.placeholder = 'Add item (press Enter)';
             input.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter' && input.value.trim()) {
-                    addArrayItem(index, path, input.value.trim());
+                    // Convert to integer if the array originally contains integers
+                    const isIntegerArray = value.every(item => Number.isInteger(item));
+                    const newValue = isIntegerArray ? parseInt(input.value) : input.value.trim();
+                    if (isIntegerArray && isNaN(newValue)) {
+                        console.log("Invalid integer input:", input.value);
+                        return; // Skip if not a valid integer for an integer array
+                    }
+                    addArrayItem(index, path, newValue);
                     input.value = '';
                 }
             });
@@ -280,6 +288,12 @@ function renderValue(value, parentElement, setting, index, path = []) {
             addButton.className = 'add-button';
             addButton.addEventListener('click', () => showAddItemForm(index, path, arrayContainer));
             arrayContainer.appendChild(addButton);
+
+            const copyLastButton = document.createElement('button');
+            copyLastButton.textContent = 'Copy Last';
+            copyLastButton.className = 'add-button';
+            copyLastButton.addEventListener('click', () => copyLastArrayItem(index, path));
+            arrayContainer.appendChild(copyLastButton);
 
             parentElement.appendChild(arrayContainer);
         }
@@ -357,6 +371,29 @@ function renderValue(value, parentElement, setting, index, path = []) {
         input.addEventListener('input', () => validateInput(input, setting, index));
         parentElement.appendChild(input);
     }
+}
+
+// New function to copy the last array item
+function copyLastArrayItem(index, path) {
+    const setting = sortedConfig[index];
+    let current = setting.value;
+
+    for (const key of path.slice(0, -1)) {
+        current = current[key];
+    }
+    const lastKey = path[path.length - 1];
+    const array = lastKey === undefined ? current : current[lastKey];
+
+    if (array.length === 0) {
+        console.log("No items to copy in array");
+        return; // Nothing to copy if array is empty
+    }
+
+    // Deep copy the last item to avoid reference issues
+    const lastItem = JSON.parse(JSON.stringify(array[array.length - 1]));
+    array.push(lastItem);
+
+    renderConfig();
 }
 
 // Show form for adding new array items
