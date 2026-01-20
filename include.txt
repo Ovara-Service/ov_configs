@@ -1,0 +1,7 @@
+client/
+example/
+server/
+shared/
+config.lua
+fxmanifest.lua
+ReadMe.md

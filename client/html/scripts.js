@@ -3,12 +3,27 @@ const closeButton = document.getElementById('close-button');
 let configName = "Default Config";
 let sortedConfig = [];
 
+const loadDefaultConfig = false;
+
 // Default configuration
 const defaultConfig = {
     configName: "BanSystemConfig",
     sortedConfig: [
         { _key: "warnSystemPermissions", value: ["superadmin", "admin", "srmod", "mod", "srsup", "dev", "content", "sup"], description: "Permissions for the warn system." },
         { _key: "banBypassOffset", value: -0.75, description: "Offset for ban bypass duration." },
+        { _key: "themeDesign", value: {
+                "color-primary": "rgb(178, 55, 55)",
+                "color-secondary": "#ffffff",
+                "color-accent": "rgba(255, 255, 255, 0.2)",
+                "primary-background": "rgba(24, 4, 0, 0.8)",
+                "secondary-background": "rgba(215, 127, 69, 0)",
+                "background-card": "#181210",
+                "primary-hover-color": "rgb(178, 73, 55)",
+                "primary-hover-color-2": "rgba(223, 53, 1, 0)",
+                "primary-hover-color-3": "#181310",
+                "primary-hover-border-color": "rgba(149, 53, 36, 0.85)",
+                "secondary-hover-color": "#FFFFFF"
+            }, description: "Design theme." },
         { _key: "requireIdentifiers", value: { discord: true, steam: true }, description: "Required player identifiers to join server." },
         { _key: "deleteWarnsOnBan", value: true, description: "Should warns be deleted when warn" },
         { _key: "addons", value: { Waveshield: { reason: "Modding #16", useKick: true, enabled: true, addRealReasonToBanNote: true } }, description: "Additional addon configurations." },
@@ -224,7 +239,7 @@ function renderConfig() {
 }
 
 // Render values recursively
-function renderValue(value, parentElement, setting, index, path = []) {
+function renderValue(value, parentElement, setting, index, path = [], depth = 0) {
     if (Array.isArray(value)) {
         // Check if all elements are strings or integers
         const isSimpleArray = value.every(item => typeof item === 'string' || Number.isInteger(item));
@@ -267,7 +282,7 @@ function renderValue(value, parentElement, setting, index, path = []) {
             parentElement.appendChild(tagContainer);
         } else {
             const arrayContainer = document.createElement('div');
-            arrayContainer.className = 'array-container';
+            arrayContainer.className = `array-container depth-${depth}`;
 
             value.forEach((item, i) => {
                 const itemContainer = document.createElement('div');
@@ -278,7 +293,7 @@ function renderValue(value, parentElement, setting, index, path = []) {
                 removeButton.className = 'remove-button';
                 removeButton.addEventListener('click', () => removeArrayItem(index, path, i));
 
-                renderValue(item, itemContainer, setting, index, [...path, i]);
+                renderValue(item, itemContainer, setting, index, [...path, i], depth + 1);
                 itemContainer.appendChild(removeButton);
                 arrayContainer.appendChild(itemContainer);
             });
@@ -299,10 +314,15 @@ function renderValue(value, parentElement, setting, index, path = []) {
         }
     } else if (typeof value === 'object' && value !== null) {
         const subContainer = document.createElement('div');
-        subContainer.className = 'sub-config';
+        subContainer.className = `sub-config depth-${depth}`;
 
         const isLocationObject = ['x', 'y', 'z'].every(key => key in value);
         if (isLocationObject) {
+            subContainer.classList.add('location-object');
+
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'location-object-buttons';
+
             const teleportButton = document.createElement('button');
             teleportButton.textContent = 'Teleport to Location';
             teleportButton.className = 'teleport-button';
@@ -319,7 +339,7 @@ function renderValue(value, parentElement, setting, index, path = []) {
                     body: JSON.stringify(location)
                 }).catch(error => console.error("Error teleporting:", error));
             });
-            subContainer.appendChild(teleportButton);
+            buttonContainer.appendChild(teleportButton);
 
             const usePositionButton = document.createElement('button');
             usePositionButton.textContent = 'Use Current Position';
@@ -337,10 +357,21 @@ function renderValue(value, parentElement, setting, index, path = []) {
                     })
                     .catch(error => console.error("Error fetching position:", error));
             });
-            subContainer.appendChild(usePositionButton);
+            buttonContainer.appendChild(usePositionButton);
+            subContainer.appendChild(buttonContainer);
         }
 
-        for (const [key, subValue] of Object.entries(value)) {
+        let entries = Object.entries(value);
+        entries.sort((a, b) => a[0].localeCompare(b[0]));
+
+        let fieldsContainer = subContainer;
+        if (isLocationObject) {
+            fieldsContainer = document.createElement('div');
+            fieldsContainer.className = 'location-object-fields';
+            subContainer.appendChild(fieldsContainer);
+        }
+
+        for (const [key, subValue] of entries) {
             const subItem = document.createElement('div');
             subItem.className = 'config-item sub-item';
 
@@ -348,29 +379,120 @@ function renderValue(value, parentElement, setting, index, path = []) {
             subLabel.textContent = key;
             subItem.appendChild(subLabel);
 
-            renderValue(subValue, subItem, setting, index, [...path, key]);
-            subContainer.appendChild(subItem);
+            renderValue(subValue, subItem, setting, index, [...path, key], depth + 1);
+            fieldsContainer.appendChild(subItem);
         }
 
         parentElement.appendChild(subContainer);
     } else {
         let input;
+        let colorPicker;
+        const colorInfo = isColor(value);
+
         if (typeof value === 'boolean') {
             input = document.createElement('select');
             input.add(new Option('true', 'true', value === true));
             input.add(new Option('false', 'false', value === false));
             input.value = value ? 'true' : 'false';
+        } else if (colorInfo) {
+            const colorContainer = document.createElement('div');
+            colorContainer.className = 'color-input-container';
+
+            input = document.createElement('input');
+            input.type = 'text';
+            input.value = value;
+            input.className = 'color-text-input';
+
+            colorPicker = document.createElement('input');
+            colorPicker.type = 'color';
+            colorPicker.value = colorInfo.hex;
+            colorPicker.className = 'color-picker';
+
+            colorPicker.addEventListener('input', () => {
+                let newColor = colorPicker.value;
+                if (colorInfo.type === 'rgb' || colorInfo.type === 'rgba') {
+                    const rgb = hexToRgb(newColor);
+                    newColor = colorInfo.type === 'rgb'
+                        ? `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`
+                        : `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${colorInfo.alpha || 1})`;
+                }
+                input.value = newColor;
+                validateInput(input, setting, index);
+            });
+
+            input.addEventListener('input', () => {
+                const newColorInfo = isColor(input.value);
+                if (newColorInfo) {
+                    colorPicker.value = newColorInfo.hex;
+                }
+            });
+
+            colorContainer.appendChild(input);
+            colorContainer.appendChild(colorPicker);
+            parentElement.appendChild(colorContainer);
         } else {
             input = document.createElement('input');
             input.type = 'text';
             input.value = value;
         }
 
-        input.dataset.index = index;
-        input.dataset.path = JSON.stringify(path);
-        input.addEventListener('input', () => validateInput(input, setting, index));
-        parentElement.appendChild(input);
+        if (input && !colorInfo) {
+            parentElement.appendChild(input);
+        }
+
+        if (input) {
+            input.dataset.index = index;
+            input.dataset.path = JSON.stringify(path);
+            input.addEventListener('input', () => validateInput(input, setting, index));
+        }
     }
+}
+
+function isColor(value) {
+    if (typeof value !== 'string') return null;
+    const s = value.trim();
+
+    // Hex: #fff or #ffffff
+    if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(s)) {
+        return { type: 'hex', hex: s.length === 4 ? '#' + s[1] + s[1] + s[2] + s[2] + s[3] + s[3] : s };
+    }
+
+    // RGB: rgb(255, 255, 255)
+    const rgbMatch = s.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i);
+    if (rgbMatch) {
+        return {
+            type: 'rgb',
+            hex: rgbToHex(parseInt(rgbMatch[1]), parseInt(rgbMatch[2]), parseInt(rgbMatch[3]))
+        };
+    }
+
+    // RGBA: rgba(255, 255, 255, 0.5)
+    const rgbaMatch = s.match(/^rgba\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)$/i);
+    if (rgbaMatch) {
+        return {
+            type: 'rgba',
+            hex: rgbToHex(parseInt(rgbaMatch[1]), parseInt(rgbaMatch[2]), parseInt(rgbaMatch[3])),
+            alpha: rgbaMatch[4]
+        };
+    }
+
+    return null;
+}
+
+function rgbToHex(r, g, b) {
+    return "#" + [r, g, b].map(x => {
+        const hex = Math.max(0, Math.min(255, x)).toString(16);
+        return hex.length === 1 ? "0" + hex : hex;
+    }).join("");
+}
+
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
 }
 
 // New function to copy the last array item
@@ -446,6 +568,11 @@ function showAddItemForm(index, path, arrayContainer) {
         ['x', 'y', 'z'].every(key => key in array[0]);
 
     if (isLocationArray) {
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'location-object-buttons';
+        buttonContainer.style.justifyContent = 'center';
+        buttonContainer.style.marginBottom = '10px';
+
         const teleportButton = document.createElement('button');
         teleportButton.textContent = 'Teleport to Location';
         teleportButton.className = 'teleport-button';
@@ -463,7 +590,7 @@ function showAddItemForm(index, path, arrayContainer) {
                 body: JSON.stringify(location)
             }).catch(error => console.error("Error teleporting:", error));
         });
-        formContainer.appendChild(teleportButton);
+        buttonContainer.appendChild(teleportButton);
 
         const usePositionButton = document.createElement('button');
         usePositionButton.textContent = 'Use Current Position';
@@ -479,7 +606,8 @@ function showAddItemForm(index, path, arrayContainer) {
                 })
                 .catch(error => console.error("Error fetching position:", error));
         });
-        formContainer.appendChild(usePositionButton);
+        buttonContainer.appendChild(usePositionButton);
+        formContainer.appendChild(buttonContainer);
     }
 
     const submitButton = document.createElement('button');
@@ -647,12 +775,10 @@ document.getElementById('save-button').addEventListener('click', () => {
 });
 
 // Load default config on page load
-/*
 document.addEventListener('DOMContentLoaded', () => {
+    if(!loadDefaultConfig) return;
     configName = defaultConfig.configName;
     sortedConfig = defaultConfig.sortedConfig;
     renderConfig();
-    configEditor.classList.remove('hidden');
-    document.body.classList.add('active');
+    showConfigEditor();
 });
-*/

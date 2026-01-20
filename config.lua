@@ -23,15 +23,29 @@ notifyPlayer = function(src, type, title, message)
     elseif src ~= nil then
         if GetResourceState("ov_notifier") == 'started' then
             TriggerClientEvent('ov_notify', src, type, title, message)
-        else
+        elseif ESX ~= nil then
             local xPlayer = ESX.GetPlayerFromId(src)
             xPlayer.showNotification(message)
+        else
+            print(title .. ': ' .. message)
+            TriggerClientEvent('chat:addMessage', src, {
+                color = type == 'error' and { 255, 0, 0 } or { 0, 255, 0 },
+                multiline = true,
+                args = { title or "Info", message }
+            })
         end
     else
         if GetResourceState("ov_notifier") == 'started' then
             TriggerEvent('ov_notify', type, title, message)
-        else
+        elseif ESX ~= nil then
             ESX.ShowNotification(message)
+        else
+            print(title .. ': ' .. message)
+            TriggerEvent('chat:addMessage', {
+                color = type == 'error' and { 255, 0, 0 } or { 0, 255, 0 },
+                multiline = true,
+                args = { title or "System", message }
+            })
         end
     end
 end
