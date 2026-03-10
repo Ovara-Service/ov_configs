@@ -16,3 +16,7 @@ function debug(message)
         print(message)
     end
 end
+
+if GetResourceState("es_extended") == 'started' then
+    ESX = exports["es_extended"]:getSharedObject()
+end

@@ -17,6 +17,18 @@
             <div id="config-container" class="hidden"></div>
             <button id="save-button" class="hidden">Save</button>
         </div>
+        <div id="copy-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Copy Object</h3>
+                <p>Enter a name for the new object:</p>
+                <input type="text" id="copy-new-key" placeholder="New Name">
+                <div id="copy-error-message" class="error-message hidden"></div>
+                <div class="modal-buttons">
+                    <button id="modal-cancel-button" class="cancel-button">Cancel</button>
+                    <button id="modal-confirm-button" class="confirm-button">Copy</button>
+                </div>
+            </div>
+        </div>
         <script src="scripts.js"></script>
     </body>
 </html>
