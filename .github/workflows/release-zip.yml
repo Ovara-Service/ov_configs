@@ -1,0 +1,70 @@
+name: Build & Release ZIP v1.1.0
+
+on:
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    types:
+      - closed
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_NAME: ov_configs
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Read version from fxmanifest.lua
+        id: manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Nur Zeilen, die GENAU "version" am Anfang haben (mit optionalem Whitespace)
+          line=$(grep -E "^[[:space:]]*version[[:space:]]+['\"][^'\"]+['\"]" fxmanifest.lua | head -n1 || true)
+          if [[ -z "$line" ]]; then
+            echo "Keine gültige version-Zeile in fxmanifest.lua gefunden" >&2
+            exit 1
+          fi
+          
+          # Wert zwischen Anführungszeichen extrahieren
+          ver=$(sed -E "s/^[[:space:]]*version[[:space:]]+['\"]([^'\"]+)['\"]/\\1/" <<< "$line" | tr -d '\r')
+          
+          # Sauber ins GITHUB_OUTPUT schreiben
+          printf "version=%s\n" "$ver" >> "$GITHUB_OUTPUT"
+
+      - name: Use version
+        run: echo "Version is ${{ steps.manifest.outputs.version }}"
+
+      - name: Prepare include list
+        run: |
+          sed -E '/^\s*(#|$)/d' include.txt > tmp_include.txt
+
+      - name: Create ZIP from include list (with root folder)
+        run: |
+          set -euo pipefail
+          mkdir -p dist "pkg/${{ env.PROJECT_NAME }}"
+          # Dateien gemäss Include-Liste in einen Staging-Ordner mit Root "${{ env.PROJECT_NAME }}" spiegeln
+          rsync -a --files-from=tmp_include.txt ./ "pkg/${{ env.PROJECT_NAME }}/"
+          # ZIP so erstellen, dass im ZIP die Root "${{ env.PROJECT_NAME }}" enthalten ist
+          (cd pkg && zip -r "../dist/${{ env.PROJECT_NAME }}-v${{ steps.manifest.outputs.version }}.zip" "${{ env.PROJECT_NAME }}")
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.manifest.outputs.version }}
+          name: "${{ env.PROJECT_NAME }} v${{ steps.manifest.outputs.version }}"
+          files: |
+            dist/${{ env.PROJECT_NAME }}-v${{ steps.manifest.outputs.version }}.zip
