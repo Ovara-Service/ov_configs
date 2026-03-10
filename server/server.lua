@@ -1,3 +1,5 @@
+OV_GIT_NAME = "ov_configs"
+
 Citizen.CreateThread(function()
     MySQL.ready(function ()
         -- Configs Table

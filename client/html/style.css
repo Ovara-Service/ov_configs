@@ -43,7 +43,14 @@ h2 {
 }
 
 .config-item {
-    margin-bottom: 12px;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.config-item:last-child {
+    border-bottom: none;
+    margin-bottom: 10px;
 }
 
 .config-item label {
@@ -221,6 +228,65 @@ button:hover {
     border-left: 2px solid #4caf50;
 }
 
+details {
+    margin-bottom: 5px;
+}
+
+summary {
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    color: #4caf50;
+    padding: 5px 10px;
+    border-radius: 4px;
+    background: #2a2a2a;
+    transition: background 0.3s ease;
+    list-style: none; /* Hide default arrow in some browsers */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.open-all-button {
+    font-size: 11px;
+    background: #4caf50;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    transition: background 0.2s ease, transform 0.1s ease;
+    margin-left: 10px;
+}
+
+.open-all-button:hover {
+    background: #45a049;
+    transform: scale(1.05);
+}
+
+.open-all-button:active {
+    transform: scale(0.95);
+}
+
+summary::-webkit-details-marker {
+    display: none; /* Hide default arrow in Chrome/Safari */
+}
+
+summary:hover {
+    background: #3a3a3a;
+}
+
+summary::before {
+    content: '▶';
+    display: inline-block;
+    margin-right: 8px;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+details[open] > summary::before {
+    transform: rotate(90deg);
+}
+
 .array-container.depth-1 { border-left-color: #2196f3; }
 .array-container.depth-2 { border-left-color: #ff9800; }
 .array-container.depth-3 { border-left-color: #9c27b0; }
@@ -230,6 +296,13 @@ button:hover {
 .array-item {
     margin-bottom: 10px;
     position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.array-item > .remove-button {
+    margin-top: 5px;
+    align-self: flex-start;
 }
 
 .add-button {
@@ -251,7 +324,7 @@ button:hover {
     max-width: none;
     padding: 8px 16px;
     background-color: #ff5252;
-    margin-left: 10px;
+    margin: 0;
 }
 
 .remove-button:hover {
@@ -264,7 +337,7 @@ button:hover {
     max-width: none;
     padding: 8px 16px;
     background-color: #4caf50;
-    margin: 5px 0;
+    margin: 0;
 }
 
 .submit-button:hover {
@@ -385,9 +458,132 @@ button:hover {
     background: #45a049;
 }
 
+.sub-label-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.copy-object-button, .edit-raw-button {
+    display: inline-block;
+    width: auto;
+    max-width: none;
+    padding: 4px 8px;
+    background-color: #2196f3;
+    margin: 0 0 0 5px;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.copy-object-button:hover, .edit-raw-button:hover {
+    background-color: #1976d2;
+}
+
+.edit-raw-button {
+    background-color: #9c27b0;
+}
+
+.edit-raw-button:hover {
+    background-color: #7b1fa2;
+}
+
+.raw-editor-container {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.raw-json-editor {
+    width: 100%;
+    height: 300px;
+    background: #121212;
+    color: #00ff00;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    padding: 10px;
+    border: 1px solid #555;
+    border-radius: 6px;
+    resize: vertical;
+}
+
+.raw-editor-buttons {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: #1e1e1e;
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid #4caf50;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.modal-content p {
+    color: #f0f0f0;
+    margin: 10px 0;
+}
+
+.modal-content input {
+    width: 100%;
+    padding: 10px;
+    margin: 15px 0;
+    background: #2a2a2a;
+    border: 1px solid #555;
+    border-radius: 6px;
+    color: #f0f0f0;
+    box-sizing: border-box;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-buttons button {
+    margin: 0;
+    width: auto;
+}
+
+.cancel-button {
+    background-color: #ff5252;
+}
+
+.confirm-button {
+    background-color: #4caf50;
+}
+
 .invalid {
-    border: 2px solid red !important;
+    border: 2px solid #ff5252 !important;
     outline: none;
+}
+
+.error-message {
+    color: #ff5252;
+    font-size: 13px;
+    margin-bottom: 10px;
+    font-weight: bold;
 }
 
 /* Styling für die Config-Liste */

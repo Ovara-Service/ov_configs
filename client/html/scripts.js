@@ -54,6 +54,72 @@ const defaultConfig = {
             description: "Smart bans configuration."
         },
         { _key: "logger", value: { enabled: true, adminJail: "bansystem_jails", storageName: "bansystem", reportStorageName: "bansystem_reports", resourceName: "yss_logger" }, description: "Logger settings" },
+        {
+            _key: "storages",
+            canCopy: true,
+            canEditRaw: true,
+            value: {
+                chat: {
+                    discord: {
+                        enabled: false,
+                        webhook: "webhook-here",
+                        embed: {
+                            title: "Chat",
+                            author: {
+                                name: "Ovara Service",
+                                url: null,
+                                icon_url: ""
+                            },
+                            color: 222,
+                            footer: {
+                                text: null,
+                                icon_url: null
+                            }
+                        },
+                        pings: [
+                            {
+                                regex: "",
+                                pingRole: 12345,
+                            }
+                        ]
+                    },
+                    database: {
+                        enabled: true,
+                        tableName: "ov_logger"
+                    }
+                },
+                chat2: {
+                    discord: {
+                        enabled: false,
+                        webhook: "webhook-here",
+                        embed: {
+                            title: "Chat",
+                            author: {
+                                name: "Ovara Service",
+                                url: null,
+                                icon_url: ""
+                            },
+                            color: 222,
+                            footer: {
+                                text: null,
+                                icon_url: null
+                            }
+                        },
+                        pings: [
+                            {
+                                regex: "",
+                                pingRole: 12345,
+                            }
+                        ]
+                    },
+                    database: {
+                        enabled: true,
+                        tableName: "ov_logger"
+                    }
+                }
+            },
+            description: "Storage configurations for different systems."
+        },
         { _key: "timeBanCache", value: 5, description: "Time in minutes for the ban cache." },
         { _key: "locale", value: "de", sort: 2, description: "Language settings", client: true },
         { _key: "debug", value: true, sort: 1, description: "Enable debug mode for ovara configs.", client: true },
@@ -86,6 +152,14 @@ window.addEventListener('message', (event) => {
         if (formContainer) {
             // Update form fields with player position
             const fields = Array.from(formContainer.querySelectorAll('.form-field'));
+            
+            // Collect existing fields that are not x, y, z, or heading
+            const existingOtherFields = fields.filter(field => {
+                const keyInput = field.querySelector('input[type="text"]:nth-child(1)');
+                return keyInput && !['x', 'y', 'z', 'heading'].includes(keyInput.value);
+            });
+
+            // Remove all fields
             fields.forEach(field => field.remove());
 
             const newFields = [];
@@ -95,6 +169,11 @@ window.addEventListener('message', (event) => {
                 { key: 'z', value: z },
                 ...(heading !== undefined ? [{ key: 'heading', value: heading }] : [])
             ];
+
+            // Re-add existing other fields first (or after, doesn't matter much)
+            existingOtherFields.forEach(field => {
+                formContainer.insertBefore(field, formContainer.querySelector('.add-button'));
+            });
 
             coords.forEach(({ key, value }) => {
                 const fieldContainer = document.createElement('div');
@@ -126,7 +205,7 @@ window.addEventListener('message', (event) => {
             // Update non-array location object
             const setting = sortedConfig[indexOfLastLocationSetting];
             let current = setting.value;
-            const newLocation = {
+            const newCoords = {
                 x: x,
                 y: y,
                 z: z,
@@ -135,14 +214,14 @@ window.addEventListener('message', (event) => {
 
             if (lastLocationPath.length === 0) {
                 // Direct location object (no nested keys)
-                setting.value = newLocation;
+                setting.value = { ...setting.value, ...newCoords };
             } else {
                 // Nested location object
                 for (const key of lastLocationPath.slice(0, -1)) {
                     current = current[key];
                 }
                 const lastKey = lastLocationPath[lastLocationPath.length - 1];
-                current[lastKey] = newLocation;
+                current[lastKey] = { ...current[lastKey], ...newCoords };
             }
             renderConfig();
         }
@@ -230,9 +309,13 @@ function renderConfig() {
         item.appendChild(label);
 
         const description = document.createElement('p');
+        description.className = 'description';
         description.textContent = setting.description;
         item.appendChild(description);
 
+        // For root items, check if we should auto-open based on content
+        // BUT the user wants them collapsed by default if they are arrays/records.
+        // Simple values don't have details, complex ones do.
         renderValue(setting.value, item, setting, index);
         container.appendChild(item);
     });
@@ -281,7 +364,44 @@ function renderValue(value, parentElement, setting, index, path = [], depth = 0)
 
             parentElement.appendChild(tagContainer);
         } else {
+            const hasNested = value.some(item => isNested(item));
+            const details = document.createElement('details');
+            const summary = document.createElement('summary');
             const arrayContainer = document.createElement('div');
+            
+            const titleSpan = document.createElement('span');
+            titleSpan.style.flex = "1";
+            titleSpan.textContent = `Array [${value.length}]`;
+            summary.appendChild(titleSpan);
+
+            if (hasNested) {
+                const openAllBtn = document.createElement('span');
+                openAllBtn.className = 'open-all-button';
+                openAllBtn.textContent = 'Open All';
+                openAllBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    details.open = true;
+                    const childDetails = details.querySelectorAll('details');
+                    childDetails.forEach(d => d.open = true);
+                });
+                summary.appendChild(openAllBtn);
+            }
+
+            if (setting.canEditRaw && depth === 0 && path.length === 0) {
+                const editRawBtn = document.createElement('span');
+                editRawBtn.className = 'open-all-button';
+                editRawBtn.style.backgroundColor = "#ff9800";
+                editRawBtn.textContent = 'Edit Raw';
+                editRawBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleRawEditor(parentElement, value, index, path);
+                });
+                summary.appendChild(editRawBtn);
+            }
+
+            details.appendChild(summary);
             arrayContainer.className = `array-container depth-${depth}`;
 
             value.forEach((item, i) => {
@@ -310,13 +430,59 @@ function renderValue(value, parentElement, setting, index, path = [], depth = 0)
             copyLastButton.addEventListener('click', () => copyLastArrayItem(index, path));
             arrayContainer.appendChild(copyLastButton);
 
-            parentElement.appendChild(arrayContainer);
+            details.appendChild(arrayContainer);
+            parentElement.appendChild(details);
         }
     } else if (typeof value === 'object' && value !== null) {
+        const isLocationObject = ['x', 'y', 'z'].every(key => key in value);
+
         const subContainer = document.createElement('div');
         subContainer.className = `sub-config depth-${depth}`;
 
-        const isLocationObject = ['x', 'y', 'z'].every(key => key in value);
+        if (depth > 0 || !isLocationObject) {
+            const hasNested = Object.values(value).some(subValue => isNested(subValue));
+            const details = document.createElement('details');
+            const summary = document.createElement('summary');
+
+            const titleSpan = document.createElement('span');
+            titleSpan.style.flex = "1";
+            titleSpan.textContent = isLocationObject ? 'Location' : 'Object';
+            summary.appendChild(titleSpan);
+
+            if (hasNested) {
+                const openAllBtn = document.createElement('span');
+                openAllBtn.className = 'open-all-button';
+                openAllBtn.textContent = 'Open All';
+                openAllBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    details.open = true;
+                    const childDetails = details.querySelectorAll('details');
+                    childDetails.forEach(d => d.open = true);
+                });
+                summary.appendChild(openAllBtn);
+            }
+
+            if (setting.canEditRaw && depth === 0 && path.length === 0) {
+                const editRawBtn = document.createElement('span');
+                editRawBtn.className = 'open-all-button';
+                editRawBtn.style.backgroundColor = "#ff9800";
+                editRawBtn.textContent = 'Edit Raw';
+                editRawBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleRawEditor(parentElement, value, index, path);
+                });
+                summary.appendChild(editRawBtn);
+            }
+
+            details.appendChild(summary);
+            details.appendChild(subContainer);
+            parentElement.appendChild(details);
+        } else {
+            parentElement.appendChild(subContainer);
+        }
+
         if (isLocationObject) {
             subContainer.classList.add('location-object');
 
@@ -375,15 +541,26 @@ function renderValue(value, parentElement, setting, index, path = [], depth = 0)
             const subItem = document.createElement('div');
             subItem.className = 'config-item sub-item';
 
+            const subLabelContainer = document.createElement('div');
+            subLabelContainer.className = 'sub-label-container';
+
             const subLabel = document.createElement('label');
             subLabel.textContent = key;
-            subItem.appendChild(subLabel);
+            subLabelContainer.appendChild(subLabel);
+
+    if (setting.canCopy && depth === 0) {
+        const copyBtn = document.createElement('button');
+        copyBtn.textContent = 'Copy Object';
+        copyBtn.className = 'copy-object-button';
+        copyBtn.addEventListener('click', () => openCopyModal(index, path, key));
+        subLabelContainer.appendChild(copyBtn);
+    }
+
+    subItem.appendChild(subLabelContainer);
 
             renderValue(subValue, subItem, setting, index, [...path, key], depth + 1);
             fieldsContainer.appendChild(subItem);
         }
-
-        parentElement.appendChild(subContainer);
     } else {
         let input;
         let colorPicker;
@@ -417,6 +594,7 @@ function renderValue(value, parentElement, setting, index, path = [], depth = 0)
                         : `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${colorInfo.alpha || 1})`;
                 }
                 input.value = newColor;
+                updateConfigValue(index, path, input.value);
                 validateInput(input, setting, index);
             });
 
@@ -425,6 +603,8 @@ function renderValue(value, parentElement, setting, index, path = [], depth = 0)
                 if (newColorInfo) {
                     colorPicker.value = newColorInfo.hex;
                 }
+                updateConfigValue(index, path, input.value);
+                validateInput(input, setting, index);
             });
 
             colorContainer.appendChild(input);
@@ -443,9 +623,39 @@ function renderValue(value, parentElement, setting, index, path = [], depth = 0)
         if (input) {
             input.dataset.index = index;
             input.dataset.path = JSON.stringify(path);
-            input.addEventListener('input', () => validateInput(input, setting, index));
+            input.addEventListener('input', () => {
+                let newValue = input.value;
+                if (typeof value === 'boolean') {
+                    newValue = newValue === 'true';
+                } else if (!isNaN(newValue) && newValue.trim() !== "") {
+                    newValue = parseFloat(newValue);
+                }
+                updateConfigValue(index, path, newValue);
+                validateInput(input, setting, index);
+            });
         }
     }
+}
+
+function updateConfigValue(index, path, newValue) {
+    let current = sortedConfig[index].value;
+    if (path.length === 0) {
+        sortedConfig[index].value = newValue;
+    } else {
+        for (const key of path.slice(0, -1)) {
+            current = current[key];
+        }
+        current[path[path.length - 1]] = newValue;
+    }
+}
+
+// Helper to check if value is a "nested" structure (Array or Object)
+function isNested(value) {
+    if (Array.isArray(value)) {
+        // Simple arrays (strings/numbers only) are not considered nested for collapsing
+        return !value.every(item => typeof item === 'string' || Number.isInteger(item));
+    }
+    return typeof value === 'object' && value !== null;
 }
 
 function isColor(value) {
@@ -493,6 +703,150 @@ function hexToRgb(hex) {
         g: parseInt(result[2], 16),
         b: parseInt(result[3], 16)
     } : null;
+}
+
+// New function to handle raw editor
+function toggleRawEditor(container, value, index, path) {
+    const existingEditor = container.querySelector('.raw-editor-container');
+    if (existingEditor) {
+        existingEditor.remove();
+        // Re-render the normal view for this item
+        renderConfig();
+        return;
+    }
+
+    const editorContainer = document.createElement('div');
+    editorContainer.className = 'raw-editor-container';
+
+    // Hide normal content but keep the header (labels/descriptions)
+    const children = Array.from(container.children);
+    children.forEach(child => {
+        if (!child.classList.contains('raw-editor-container') && 
+            !child.classList.contains('sub-label-container') &&
+            !child.classList.contains('description') &&
+            child.tagName !== 'LABEL') {
+            child.style.display = 'none';
+        }
+    });
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'raw-json-editor';
+    textarea.value = JSON.stringify(value, null, 4);
+    editorContainer.appendChild(textarea);
+
+    const buttonGroup = document.createElement('div');
+    buttonGroup.className = 'raw-editor-buttons';
+
+    const errorMsg = document.createElement('div');
+    errorMsg.className = 'error-message hidden';
+    editorContainer.appendChild(errorMsg);
+
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = 'Apply JSON';
+    saveBtn.className = 'submit-button';
+
+    saveBtn.addEventListener('click', () => {
+        try {
+            const newValue = JSON.parse(textarea.value);
+            updateConfigValue(index, path, newValue);
+            renderConfig();
+        } catch (e) {
+            textarea.classList.add('invalid');
+            errorMsg.textContent = "Invalid JSON: " + e.message;
+            errorMsg.classList.remove('hidden');
+        }
+    });
+
+    textarea.addEventListener('input', () => {
+        textarea.classList.remove('invalid');
+        errorMsg.classList.add('hidden');
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.className = 'remove-button';
+    cancelBtn.addEventListener('click', () => {
+        renderConfig();
+    });
+
+    buttonGroup.appendChild(saveBtn);
+    buttonGroup.appendChild(cancelBtn);
+    editorContainer.appendChild(buttonGroup);
+    container.appendChild(editorContainer);
+}
+
+// Global variables for copy modal
+let currentCopyData = null;
+
+function openCopyModal(index, path, oldKey) {
+    currentCopyData = { index, path, oldKey };
+    const modal = document.getElementById('copy-modal');
+    const input = document.getElementById('copy-new-key');
+    const errorMsg = document.getElementById('copy-error-message');
+    
+    input.value = `${oldKey}_copy`;
+    input.classList.remove('invalid');
+    errorMsg.classList.add('hidden');
+    errorMsg.textContent = '';
+    
+    modal.classList.remove('hidden');
+    input.focus();
+    input.select();
+}
+
+function closeCopyModal() {
+    document.getElementById('copy-modal').classList.add('hidden');
+    currentCopyData = null;
+}
+
+document.getElementById('modal-cancel-button').addEventListener('click', closeCopyModal);
+document.getElementById('modal-confirm-button').addEventListener('click', () => {
+    if (!currentCopyData) return;
+    const { index, path, oldKey } = currentCopyData;
+    const input = document.getElementById('copy-new-key');
+    const errorMsg = document.getElementById('copy-error-message');
+    const newKey = input.value.trim();
+    
+    if (!newKey) {
+        input.classList.add('invalid');
+        errorMsg.textContent = "Please enter a name.";
+        errorMsg.classList.remove('hidden');
+        return;
+    }
+
+    const setting = sortedConfig[index];
+    let current = setting.value;
+
+    for (const key of path) {
+        current = current[key];
+    }
+
+    if (current[newKey]) {
+        input.classList.add('invalid');
+        errorMsg.textContent = "An object with this name already exists!";
+        errorMsg.classList.remove('hidden');
+        return;
+    }
+
+    // Deep copy
+    current[newKey] = JSON.parse(JSON.stringify(current[oldKey]));
+    
+    closeCopyModal();
+    renderConfig();
+});
+
+document.getElementById('copy-new-key').addEventListener('input', () => {
+    const input = document.getElementById('copy-new-key');
+    const errorMsg = document.getElementById('copy-error-message');
+    input.classList.remove('invalid');
+    errorMsg.classList.add('hidden');
+});
+
+// New function to copy an object item
+function copyObjectItem(index, path, oldKey) {
+    // This is replaced by the modal version but kept for compatibility or reference if needed
+    // The user specifically asked NOT to use prompt
+    openCopyModal(index, path, oldKey);
 }
 
 // New function to copy the last array item

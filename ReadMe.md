@@ -49,3 +49,18 @@ Contributions are welcome! Feel free to submit pull requests or report issues to
 
 ## License
 This project is licensed under the MIT License.
+
+## Changelog
+
+### v1.0.4
+- **Enhanced Configuration View**: Implemented collapsible sections for complex configuration options (Arrays and Objects) to improve readability.
+- **"Open All" Feature**: Added a button to recursively expand all nested objects within a section, visible only when sub-objects exist.
+- **Recursive Expansion Logic**: Improved the "Open All" button with recursive logic to handle deeply nested structures.
+- **Position Update Fix**: Resolved an issue where updating player coordinates would overwrite other fields in the same object.
+- **Object Copy Function**: Added the ability to duplicate configuration objects with a custom name via an integrated HTML modal.
+- **Raw JSON Editor**: Introduced a "Edit Raw" feature for top-level objects, allowing direct JSON manipulation with integrated error handling.
+- **UI & UX Improvements**:
+    - Replaced browser `alert()` popups with integrated on-screen error messages.
+    - Improved layout with consistent button alignment and visual separators between main configuration keys.
+    - Translated all UI elements and messages to English for consistency.
+    - Added animated arrows and hover effects to improve interactive visual feedback.

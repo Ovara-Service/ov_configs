@@ -119,6 +119,10 @@ function createConfig(name, version)
                 -- Regular table conversion
                 local convertedTable = {}
                 for k, v in pairs(value) do
+                    -- If defaultValue[k] is not nil, it's a known property, otherwise it might be a dynamic key
+                    -- In case of dynamic keys, we don't have a default value for that specific key.
+                    -- But we might have a default value for the whole object type (if it's a map).
+                    -- For now, we use the specific defaultValue[k] if available.
                     convertedTable[k] = convertValue(v, defaultValue[k])
                 end
                 return convertedTable
@@ -151,7 +155,9 @@ function createConfig(name, version)
                         description = description,
                         value = convertValue(value, defaultValue),
                         client = configValue.client,
-                        sort = configValue.sort
+                        sort = configValue.sort,
+                        canCopy = configValue.canCopy,
+                        canEditRaw = configValue.canEditRaw
                     }
                 else
                     print(string.format("Invalid config value for %s:%s with value: %s", self.name, key, dump(configValue)))
@@ -228,7 +234,8 @@ function restoreSortedConfig(sortedConfig)
 
     for _, entry in ipairs(sortedConfig) do
         if entry._key then
-            restoredConfig[entry._key] = entry
+            local key = entry._key
+            restoredConfig[key] = entry
             entry._key = nil
         else
             print("Sorted Config is missing _key, cannot restore original format.")
